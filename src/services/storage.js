@@ -1,31 +1,23 @@
 // src/services/storage.js
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Instância única do MMKV (rápida e síncrona)
-//const storage = new MMKV();
-
-// Opcional: você pode adicionar criptografia assim (recomendado em produção):
-// const storage = new MMKV({
-//   id: 'myAppStorage',
-//   encryptionKey: 'sua_chave_secreta_aqui_32_chars' // 32 caracteres para AES-256
-// });
+const TOKEN_KEY = 'liftlog_token';
 
 export const TokenStorage = {
-  // Token principal
-  setToken: (token) => storage.set('userToken', token),
-  getToken: () => storage.getString('userToken'), // retorna string ou undefined
-  removeToken: () => storage.delete('userToken'),
-
-  // Refresh token
-  setRefreshToken: (token) => storage.set('refreshToken', token),
-  getRefreshToken: () => storage.getString('refreshToken'),
-  removeRefreshToken: () => storage.delete('refreshToken'),
-
-  // Limpar tudo (útil no logout)
-  clearAll: () => {
-    storage.clearAll();
+  // Salvar token
+  async setToken(token) {
+    if (token) {
+      await AsyncStorage.setItem(TOKEN_KEY, token);
+    }
   },
 
-  // Verificar se está logado
-  isLoggedIn: () => !!storage.getString('userToken'),
+  // Pegar token
+  async getToken() {
+    return await AsyncStorage.getItem(TOKEN_KEY);
+  },
+
+  // Limpar token (logout)
+  async clearToken() {
+    await AsyncStorage.removeItem(TOKEN_KEY);
+  },
 };

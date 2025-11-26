@@ -91,6 +91,7 @@ import { View, StyleSheet } from 'react-native';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import HomeScreen from './screens/HomeScreen';
+import CreateWorkoutScreen from './screens/CreateWorkoutScreen';
 
 const App = () => {
   const [screen, setScreen] = useState('login'); // começa direto no login
@@ -102,21 +103,23 @@ const App = () => {
   return (
     <View style={styles.container}>
       {screen === 'login' && (
-        <LoginScreen
-          onGoToRegister={goToRegister}
-          onLogin={goToHome}
-        />
+        <LoginScreen onGoToRegister={goToRegister} onLogin={goToHome} />
       )}
-
       {screen === 'register' && (
-        <RegisterScreen
+        <RegisterScreen onGoToLogin={goToLogin} onRegister={goToHome} />
+      )}
+      {screen === 'home' && (
+        <HomeScreen
           onGoToLogin={goToLogin}
-          onRegister={goToHome}
+          onGoToCreateWorkout={() => setScreen('createWorkout')}  // ← AQUI
+          onGoToWorkout={() => setScreen('workout')}
         />
       )}
-
-      {screen === 'home' && (
-        <HomeScreen onGoToLogin={goToLogin} />
+      {screen === 'createWorkout' && (
+        <CreateWorkoutScreen onGoBack={() => setScreen('home')} />
+      )}
+      {screen === 'workout' && (
+        <WorkoutScreen onGoBack={() => setScreen('home')} />
       )}
     </View>
   );

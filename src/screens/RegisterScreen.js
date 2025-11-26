@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { TokenStorage } from '../services/storage';
 
 const RegisterScreen = ({ onGoToLogin, onRegister }) => {
   const [form, setForm] = useState({
@@ -66,6 +67,11 @@ const RegisterScreen = ({ onGoToLogin, onRegister }) => {
           erro = json.message || json.errors?.CPF?.[0] || json.title || erro;
         } catch {}
         throw new Error(erro);
+      }
+
+      const data = JSON.parse(text);
+      if (data.token) {
+        await TokenStorage.setToken(data.token);  // SALVA O TOKEN
       }
 
       onRegister();
