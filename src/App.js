@@ -94,7 +94,7 @@ import HomeScreen from './screens/HomeScreen';
 import CreateWorkoutScreen from './screens/CreateWorkoutScreen';
 
 const App = () => {
-  const [screen, setScreen] = useState('login'); // começa direto no login
+  const [screen, setScreen] = useState('login');
 
   const goToLogin = () => setScreen('login');
   const goToRegister = () => setScreen('register');
@@ -111,7 +111,7 @@ const App = () => {
       {screen === 'home' && (
         <HomeScreen
           onGoToLogin={goToLogin}
-          onGoToCreateWorkout={() => setScreen('createWorkout')}  // ← AQUI
+          onGoToCreateWorkout={() => setScreen('createWorkout')}
           onGoToWorkout={() => setScreen('workout')}
         />
       )}

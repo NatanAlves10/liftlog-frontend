@@ -149,57 +149,52 @@ const LoginScreen = ({ onGoToRegister, onLogin }) => {
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // const handleLogin = async () => {
-  //   if (!email.trim() || !senha.trim()) {
-  //     Alert.alert('Atenção', 'Preencha e-mail e senha');
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const response = await fetch('http://192.168.1.221:8080/login', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         email: email.trim().toLowerCase(),
-  //         password: senha,
-  //       }),
-  //     });
-
-  //     const text = await response.text();
-
-  //     if (!response.ok) {
-  //       const erro = text.includes('credenciais') || text.includes('inválidas')
-  //         ? 'E-mail ou senha incorretos'
-  //         : 'Erro no servidor';
-  //       throw new Error(erro);
-  //     }
-
-  //     const data = JSON.parse(text);
-
-  //     if (data.token) {
-  //       // SALVA OS TOKENS COM MMKV (síncrono e rápido)
-  //       TokenStorage.setToken(data.token);
-  //       if (data.refreshToken) TokenStorage.setRefreshToken(data.refreshToken);
-
-  //       onLogin();
-  //     } else {
-  //       throw new Error('Token não retornado');
-  //     }
-
-  //   } catch (error) {
-  //     Alert.alert('Login falhou', error.message || 'Tente novamente');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleLogin = async () => {
-    // BYPASS TOTAL — clica em Entrar e vai direto pra Home, independente do que digitou
-    onLogin();
+    if (!email.trim() || !senha.trim()) {
+      Alert.alert('Atenção', 'Preencha e-mail e senha');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://192.168.1.221:8080/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password: senha,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('Erro no login', data.message || 'Email ou senha incorretos');
+        setLoading(false);
+        return;
+      }
+
+      const token = data.token || data.accessToken || data.jwt;
+
+      if (!token) {
+        Alert.alert('Erro', 'Token não retornado pela API');
+        setLoading(false);
+        return;
+      }
+
+      await TokenStorage.setToken(token);
+
+      Alert.alert('Sucesso!', 'Login realizado com sucesso!');
+      onLogin();
+    } catch (error) {
+      console.log('Erro no login:', error)
+      Alert.alert('Erro', 'Não foi possível conectar ao servidor');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
