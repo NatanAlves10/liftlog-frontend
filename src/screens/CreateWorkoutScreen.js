@@ -1,261 +1,3 @@
-// // src/screens/CreateWorkoutScreen.js — VERSÃO FINAL COM API REAL
-// import React, { useState, useEffect } from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   TouchableOpacity,
-//   ScrollView,
-//   ActivityIndicator,
-//   Alert,
-// } from 'react-native';
-// import { TokenStorage } from '../services/storage';
-
-// const CreateWorkoutScreen = ({ onGoBack }) => {
-//   const [selectedMuscle, setSelectedMuscle] = useState('');
-//   const [exercises, setExercises] = useState([]);
-//   const [loading, setLoading] = useState(false);
-
-//   const muscleGroups = [
-//     { label: '-- Selecione --', value: '' },
-//     { label: 'Quadríceps', value: 'quads' },
-//     { label: 'Posterior de Coxa', value: 'hamstrings' },
-//     { label: 'Glúteos', value: 'glutes' },
-//     { label: 'Panturrilha', value: 'calves' },
-//     { label: 'Peito', value: 'chest' },
-//     { label: 'Costas', value: 'back' },
-//     { label: 'Ombros', value: 'shoulders' },
-//     { label: 'Bíceps', value: 'biceps' },
-//     { label: 'Tríceps', value: 'triceps' },
-//     { label: 'Antebraços', value: 'forearms' },
-//     { label: 'Trapézio', value: 'traps' },
-//     { label: 'Core / Abdômen', value: 'core' },
-//     { label: 'Adutores', value: 'adductors' },
-//     { label: 'Abdutores', value: 'abductors' },
-//     { label: 'Pescoço', value: 'neck' },
-//   ];
-
-//   // Função que busca exercícios ao clicar no grupo
-//   const fetchExercises = async (muscle) => {
-//     if (!muscle) {
-//       setExercises([]);
-//       return;
-//     }
-
-//     setLoading(true);
-//     try {
-//       const token = await TokenStorage.getToken();
-//       if (!token) {
-//         Alert.alert('Erro', 'Token não encontrado. Faça login novamente.');
-//         setLoading(false);
-//         return;
-//       }
-
-//       const response = await fetch(
-//         `http://192.168.1.221:8080/api/exercises?muscle=${muscle}`,
-//         {
-//           method: 'GET',
-//           headers: {
-//             'Authorization': `Bearer ${token}`,
-//             'accept': 'application/json',
-//           },
-//         }
-//       );
-
-//       if (!response.ok) {
-//         const errorText = await response.text();
-//         throw new Error(`Erro ${response.status}`);
-//       }
-
-//       const data = await response.json();
-//       setExercises(data);
-
-//       Alert.alert(
-//         'Sucesso!',
-//         `Carregado ${data.length} exercício(s) para ${muscleGroups.find(m => m.value === muscle)?.label}!`
-//       );
-//     } catch (error) {
-//       console.log('Erro na API:', error);
-//       Alert.alert('Erro de conexão', 'Não foi possível carregar os exercícios.');
-//       setExercises([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Dispara a busca quando muda o músculo
-//   useEffect(() => {
-//     if (selectedMuscle) {
-//       fetchExercises(selectedMuscle);
-//     } else {
-//       setExercises([]);
-//     }
-//   }, [selectedMuscle]);
-
-//   return (
-//     <View style={styles.container}>
-//       {/* HEADER */}
-//       <View style={styles.header}>
-//         <TouchableOpacity onPress={onGoBack}>
-//           <Text style={styles.backIcon}>←</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity
-//           style={{
-//             position: 'absolute',
-//             top: 100,
-//             right: 20,
-//             backgroundColor: '#FF0055',
-//             padding: 14,
-//             borderRadius: 10,
-//             zIndex: 999,
-//             borderWidth: 2,
-//             borderColor: '#FF4488',
-//           }}
-//           onPress={async () => {
-//             const token = await TokenStorage.getToken();
-//             if (!token) {
-//               Alert.alert('Debug Token', 'Nenhum token salvo');
-//               return;
-//             }
-
-//             // Mostra só os últimos 40 caracteres
-//             const ultimos40 = token.length > 40 ? '...' + token.slice(-40) : token;
-
-//             Alert.alert(
-//               'TOKEN ATUAL (últimos 40)',
-//               ultimos40,
-//               [
-//                 {
-//                   text: 'Copiar token completo',
-//                   onPress: () => {
-//                     Clipboard.setString(token);
-//                     Alert.alert('Copiado!', 'Token completo copiado para área de transferência');
-//                   },
-//                 },
-//                 { text: 'OK' },
-//               ]
-//             );
-//           }}
-//         >
-//           <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>
-//             DEBUG TOKEN
-//           </Text>
-//         </TouchableOpacity>
-//         <Text style={styles.title}>Monte Seu Treino</Text>
-//         <View style={{ width: 50 }} />
-//       </View>
-
-//       {/* SELECT HORIZONTAL */}
-//       <View style={styles.selectContainer}>
-//         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-//           {muscleGroups.map((item) => (
-//             <TouchableOpacity
-//               key={item.value}
-//               style={[
-//                 styles.muscleButton,
-//                 selectedMuscle === item.value && styles.muscleButtonActive,
-//               ]}
-//               onPress={() => setSelectedMuscle(item.value)}
-//             >
-//               <Text
-//                 style={[
-//                   styles.muscleText,
-//                   selectedMuscle === item.value && styles.muscleTextActive,
-//                 ]}
-//               >
-//                 {item.label}
-//               </Text>
-//             </TouchableOpacity>
-//           ))}
-//         </ScrollView>
-//       </View>
-
-//       {/* CONTEÚDO */}
-//       <ScrollView style={styles.content}>
-//         {loading ? (
-//           <View style={styles.loading}>
-//             <ActivityIndicator size="large" color="#00FFCC" />
-//             <Text style={styles.loadingText}>Carregando exercícios...</Text>
-//           </View>
-//         ) : exercises.length === 0 ? (
-//           <View style={styles.placeholder}>
-//             <Text style={styles.placeholderText}>
-//               {selectedMuscle
-//                 ? 'Nenhum exercício encontrado para este grupo.'
-//                 : 'Selecione um grupo muscular acima'}
-//             </Text>
-//           </View>
-//         ) : (
-//           exercises.map((ex) => (
-//             <View key={ex.id} style={styles.exerciseCard}>
-//               <Text style={styles.exerciseName}>{ex.name}</Text>
-//               <Text style={styles.exerciseMuscles}>
-//                 {ex.muscleGroups?.join(' • ') || 'Sem grupos'}
-//               </Text>
-//               <TouchableOpacity style={styles.addButton}>
-//                 <Text style={styles.addButtonText}>+ Adicionar ao treino</Text>
-//               </TouchableOpacity>
-//             </View>
-//           ))
-//         )}
-//       </ScrollView>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, backgroundColor: '#000' },
-//   header: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     paddingHorizontal: 20,
-//     paddingTop: 60,
-//     paddingBottom: 10,
-//   },
-//   backIcon: { fontSize: 36, color: '#9D4EDD', fontWeight: 'bold' },
-//   title: { fontSize: 24, color: '#FFF', fontWeight: 'bold' },
-//   selectContainer: { paddingHorizontal: 20, paddingVertical: 16 },
-//   muscleButton: {
-//     paddingHorizontal: 18,
-//     paddingVertical: 12,
-//     borderRadius: 30,
-//     backgroundColor: '#111',
-//     marginRight: 12,
-//     borderWidth: 1,
-//     borderColor: '#333',
-//   },
-//   muscleButtonActive: { backgroundColor: '#00FFCC', borderColor: '#00FFCC' },
-//   muscleText: { color: '#AAA', fontSize: 14, fontWeight: '600' },
-//   muscleTextActive: { color: '#000', fontWeight: 'bold' },
-//   content: { flex: 1, paddingHorizontal: 20 },
-//   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-//   loadingText: { color: '#AAA', marginTop: 20 },
-//   placeholder: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
-//   placeholderText: { color: '#666', fontSize: 18, textAlign: 'center', lineHeight: 26 },
-//   exerciseCard: {
-//     backgroundColor: '#111',
-//     padding: 18,
-//     borderRadius: 16,
-//     marginBottom: 14,
-//     borderLeftWidth: 4,
-//     borderLeftColor: '#00FFCC',
-//   },
-//   exerciseName: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-//   exerciseMuscles: { color: '#00FFCC', fontSize: 13, marginTop: 6 },
-//   addButton: {
-//     marginTop: 12,
-//     backgroundColor: '#00FFCC',
-//     padding: 12,
-//     borderRadius: 25,
-//     alignItems: 'center',
-//   },
-//   addButtonText: { color: '#000', fontWeight: 'bold', fontSize: 15 },
-// });
-
-// export default CreateWorkoutScreen;
-
-// src/screens/CreateWorkoutScreen.js — VERSÃO FINAL: LAYOUT COMPACTO E PROFISSIONAL
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -270,6 +12,7 @@ import {
 } from 'react-native';
 import { TokenStorage } from '../services/storage';
 import { translateExercise, translateMuscleGroups } from '../utils/exerciseTranslation';
+import api from '../config/api';
 
 const CreateWorkoutScreen = ({ onGoBack }) => {
   const [selectedMuscle, setSelectedMuscle] = useState('');
@@ -281,12 +24,26 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
   const [sets, setSets] = useState('4');
   const [reps, setReps] = useState('10');
   const [workoutName, setWorkoutName] = useState('');
+  const [weight, setWeight] = useState('');
+  const [dayOfWeek, setDayOfWeek] = useState('Monday');
+
+  const daysOfWeek = [
+    { label: 'Dom', value: 'Sunday' },
+    { label: 'Seg', value: 'Monday' },
+    { label: 'Ter', value: 'Tuesday' },
+    { label: 'Qua', value: 'Wednesday' },
+    { label: 'Qui', value: 'Thursday' },
+    { label: 'Sex', value: 'Friday' },
+    { label: 'Sáb', value: 'Saturday' },
+  ];
 
   const muscleGroups = [
     { label: '-- Selecione --', value: '' },
     { label: 'Quadríceps', value: 'quads' },
     { label: 'Posterior', value: 'hamstrings' },
     { label: 'Glúteos', value: 'glutes' },
+    { label: 'Abdutores', value: 'abductors' },
+    { label: 'Adutores', value: 'adductors' },
     { label: 'Panturrilha', value: 'calves' },
     { label: 'Peito', value: 'chest' },
     { label: 'Costas', value: 'back' },
@@ -294,6 +51,7 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
     { label: 'Bíceps', value: 'biceps' },
     { label: 'Tríceps', value: 'triceps' },
     { label: 'Antebraço', value: 'forearms' },
+    { label: 'Pescoço', value: 'neck' },
     { label: 'Trapézio', value: 'traps' },
     { label: 'Core', value: 'core' },
   ];
@@ -303,7 +61,7 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
     setLoading(true);
     try {
       const token = await TokenStorage.getToken();
-      const res = await fetch(`http://192.168.1.221:8080/api/exercises?muscle=${muscle}`, {
+      const res = await fetch(`${api.exercises}?muscle=${muscle}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error();
@@ -323,11 +81,13 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
     setCurrentExercise(ex);
     setSets('4');
     setReps('10');
+    setWeight('')
     setModalVisible(true);
   };
 
   const addToWorkout = () => {
     if (!sets || !reps) return Alert.alert('Erro', 'Preencha séries e reps');
+    const peso = weight ? parseFloat(weight) || 0 : 0;
     const novo = {
       ...currentExercise,
       sets: +sets,
@@ -349,16 +109,17 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
       const token = await TokenStorage.getToken();
       const payload = {
         name: workoutName.trim(),
+        dayOfWeek: dayOfWeek,
         exercises: selectedExercises.map(ex => ({
           id: ex.id,
           sets: ex.sets,
           reps: ex.reps,
-          weight: ex.weight,
-          unit: ex.unit,
+          weight: Number(ex.weight) || 0,
+          unit: 'Kilograms',
         })),
       };
 
-      const res = await fetch('http://192.168.1.221:8080/api/workouts', {
+      const res = await fetch(api.workouts, {  // ← IP CENTRALIZADO!
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -402,6 +163,21 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
           onChangeText={setWorkoutName}
         />
       </View>
+
+      <Text style={styles.dayLabel}>Dia da semana</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daySelect}>
+        {daysOfWeek.map(day => (
+          <TouchableOpacity
+            key={day.value}
+            style={[styles.dayChip, dayOfWeek === day.value && styles.dayChipActive]}
+            onPress={() => setDayOfWeek(day.value)}
+          >
+            <Text style={[styles.dayText, dayOfWeek === day.value && styles.dayTextActive]}>
+              {day.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* SELECT COMPACTO */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.select}>
@@ -475,6 +251,7 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
             <Text style={styles.modalTitle}>{translateExercise(currentExercise?.name)}</Text>
             <TextInput style={styles.modalIn} placeholder="Séries" value={sets} onChangeText={setSets} keyboardType="numeric" />
             <TextInput style={styles.modalIn} placeholder="Repetições" value={reps} onChangeText={setReps} keyboardType="numeric" />
+            <TextInput style={styles.modalIn} placeholder="Peso (kg)" value={weight} onChangeText={setWeight} keyboardType="numeric" placeholderTextColor="#666"/>
             <View style={styles.modalRow}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalCancelText}>Cancelar</Text>
@@ -527,6 +304,40 @@ const styles = StyleSheet.create({
   chipTextActive: { 
     color: '#000', 
     fontWeight: 'bold' 
+  },
+  sectionLabel: {
+    color: '#00FFCC',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 16,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  daySelect: {
+    paddingLeft: 16,
+    paddingVertical: 8,
+  },
+  dayChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#222',
+    borderRadius: 30,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  dayChipActive: {
+    backgroundColor: '#00FFCC',
+    borderColor: '#00FFCC',
+  },
+  dayText: {
+    color: '#ddd',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  dayTextActive: {
+    color: '#000',
+    fontWeight: 'bold',
   },
   summary: { backgroundColor: '#111', marginHorizontal: 16, marginVertical: 8, padding: 10, borderRadius: 12, borderLeftWidth: 3, borderLeftColor: '#00FFCC' },
   summaryText: { color: '#00FFCC', fontWeight: 'bold', marginBottom: 6 },

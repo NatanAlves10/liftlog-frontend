@@ -1,140 +1,9 @@
-// import React, { useState } from 'react';
-// import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-// // Remova a importação da API, já que não será usada
-// // import { authAPI } from '../services/api';
-
-// const LoginScreen = ({ onGoToRegister, onLogin }) => {
-//   const [email, setEmail] = useState('');
-//   const [password, setPassword] = useState('');
-//   const [loading, setLoading] = useState(false);
-
-//   const handleLogin = async () => {
-//     // Verificação simples (opcional, pode remover se quiser)
-//     if (!email || !password) {
-//       Alert.alert('Erro', 'Preencha email e senha!');
-//       return;
-//     }
-
-//     setLoading(true);
-//     try {
-//       // Removida a chamada à API
-//       // const response = await authAPI.login(email, password);
-
-//       // Simula login bem-sucedido
-//       Alert.alert('Sucesso!', 'Login simulado! Prosseguindo...');
-//       onLogin(); // Navega para a próxima tela ou executa a ação de login
-//     } catch (error) {
-//       console.log('Erro no handleLogin:', error);
-//       Alert.alert(
-//         'Erro',
-//         error.message || 'Algo deu errado. Verifique os logs.',
-//       );
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>LiftLog</Text>
-//       <Text style={styles.subtitle}>Sistema de Controle de Treino</Text>
-      
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Email"
-//         value={email}
-//         onChangeText={setEmail}
-//         autoCapitalize="none"
-//         keyboardType="email-address"
-//         placeholderTextColor="#666"
-//       />
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Senha"
-//         value={password}
-//         onChangeText={setPassword}
-//         secureTextEntry
-//         placeholderTextColor="#666"
-//       />
-      
-//       <TouchableOpacity 
-//         style={[styles.button, loading && styles.buttonDisabled]} 
-//         onPress={handleLogin}
-//         disabled={loading}
-//       >
-//         <Text style={styles.buttonText}>
-//           {loading ? 'Entrando...' : 'Entrar'}
-//         </Text>
-//       </TouchableOpacity>
-      
-//       <TouchableOpacity style={styles.button} onPress={onGoToRegister}>
-//         <Text style={styles.buttonText}>Cadastrar</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#000',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     padding: 20,
-//   },
-//   title: {
-//     fontSize: 40,
-//     color: '#B266FF',
-//     fontWeight: 'bold',
-//     marginBottom: 8,
-//   },
-//   subtitle: {
-//     fontSize: 16,
-//     color: '#FFF',
-//     marginBottom: 40,
-//   },
-//   input: {
-//     width: '100%',
-//     height: 50,
-//     borderWidth: 2,
-//     borderColor: '#00FFCC',
-//     borderRadius: 25,
-//     marginBottom: 15,
-//     paddingHorizontal: 20,
-//     color: '#FFF',
-//     backgroundColor: '#111',
-//     fontSize: 16,
-//   },
-//   button: {
-//     width: '100%',
-//     height: 50,
-//     backgroundColor: '#00FFCC',
-//     borderRadius: 25,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     marginBottom: 10,
-//   },
-//   buttonDisabled: {
-//     backgroundColor: '#666',
-//   },
-//   buttonText: {
-//     color: '#000',
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//   },
-// });
-
-// export default LoginScreen;
-
-// src/screens/LoginScreen.js
-
 import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -142,27 +11,34 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { TokenStorage } from '../services/storage'; // <- nosssso MMKV
+import { TokenStorage } from '../services/storage';
+import { COLORS, SIZES } from '../styles/theme';
+import { inputStyle, buttonStyle, textStyle } from '../styles/components';
+import api from '../config/api';
 
 const LoginScreen = ({ onGoToRegister, onLogin }) => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const isValidEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email.trim());
+  };
+  const hasText = email.length > 0;
+  const hasAt = email.includes('@');
+  const showNoAtError = hasText && !hasAt;
+  const showInvalidFormatError = hasText && hasAt && !isValidEmail(email);
+
   const handleLogin = async () => {
-    if (!email.trim() || !senha.trim()) {
-      Alert.alert('Atenção', 'Preencha e-mail e senha');
-      return;
-    }
+    if (!email || !senha) return Alert.alert('Atenção', 'Preencha e-mail e senha');
+    if (!isValidEmail(email)) return Alert.alert('E-mail inválido', 'Verifique o formato');
 
     setLoading(true);
-
     try {
-      const response = await fetch('http://192.168.1.221:8080/login', {
+      const response = await fetch(api.login, {  // ← URL CENTRALIZADA
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
           password: senha,
@@ -172,116 +48,86 @@ const LoginScreen = ({ onGoToRegister, onLogin }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        Alert.alert('Erro no login', data.message || 'Email ou senha incorretos');
-        setLoading(false);
-        return;
+        throw new Error(data.message || 'E-mail ou senha incorretos');
       }
 
       const token = data.token || data.accessToken || data.jwt;
-
-      if (!token) {
-        Alert.alert('Erro', 'Token não retornado pela API');
-        setLoading(false);
-        return;
-      }
+      if (!token) throw new Error('Token não retornado');
 
       await TokenStorage.setToken(token);
+      onLogin(); // ← vai direto pra Home
 
-      Alert.alert('Sucesso!', 'Login realizado com sucesso!');
-      onLogin();
     } catch (error) {
-      console.log('Erro no login:', error)
-      Alert.alert('Erro', 'Não foi possível conectar ao servidor');
+      Alert.alert('Erro', error.message || 'Não foi possível conectar');
     } finally {
       setLoading(false);
     }
-  };
+  }; 
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#000' }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.logoContainer}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <ScrollView contentContainerStyle={{flexGrow: 1, padding: SIZES.padding, justifyContent: 'center'}}>
+        
+        <View style={{ alignItems: 'center', marginTop: 80, marginBottom: 30 }}>
           <Image
             source={require('../../assets/images/logo.png')}
-            style={styles.logoImage}
+            style={{ width: 280, height: 120 }}
             resizeMode="contain"
           />
         </View>
-        <Text style={styles.title}>Bem-vindo!</Text>
+        <Text style={textStyle.title}>Bem-vindo!</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="E-mail"
-          placeholderTextColor="#888"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        <View>
+          <TextInput
+            style={[
+              inputStyle.base,
+              (showNoAtError || showInvalidFormatError) && inputStyle.error,
+            ]}
+            placeholder="E-mail"
+            placeholderTextColor={COLORS.textMuted}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect= {false}
+          />
 
+          {showNoAtError && (
+            <Text style = {textStyle.error}>Email precisa ter um @</Text>
+          )}
+          {showInvalidFormatError && (
+            <Text style = {textStyle.error}>Email imcompleto ou invalido</Text>
+          )}
+        </View>
+        
         <TextInput
-          style={styles.input}
+          style={inputStyle.base}
           placeholder="Senha"
-          placeholderTextColor="#888"
+          placeholderTextColor={COLORS.textMuted}
           value={senha}
           onChangeText={setSenha}
           secureTextEntry
         />
 
         <TouchableOpacity
-          style={[styles.button, loading && { opacity: 0.6 }]}
+          style={[buttonStyle.primary, loading && { opacity: 0.7 }]}
           onPress={handleLogin}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#000" />
           ) : (
-            <Text style={styles.buttonText}>Entrar</Text>
+            <Text style={buttonStyle.text}>Entrar</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onGoToRegister}>
-          <Text style={styles.registerText}>
-            Não tem conta? <Text style={{ color: '#00FFCC' }}>Cadastre-se</Text>
+          <Text style={textStyle.link}>
+            Não tem conta? <Text style={textStyle.linkHighlight}>Cadastre-se</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
-};
-
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24, justifyContent: 'center', backgroundColor: '#000' },
-  title: { fontSize: 34, fontWeight: 'bold', color: '#FFF', textAlign: 'center', marginBottom: 50 },
-  input: {
-    backgroundColor: '#111',
-    color: '#FFF',
-    padding: 18,
-    borderRadius: 12,
-    marginBottom: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 100,
-    marginBottom: 30,
-  },
-  logoImage: {
-    width: 280,
-    height: 120,
-  },
-  button: {
-    backgroundColor: '#00FFCC',
-    padding: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonText: { color: '#000', fontSize: 18, fontWeight: 'bold' },
-  registerText: { color: '#AAA', textAlign: 'center', marginTop: 30, fontSize: 16 },
-});
-
+}
 export default LoginScreen;

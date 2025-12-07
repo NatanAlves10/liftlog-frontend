@@ -92,13 +92,17 @@ import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import HomeScreen from './screens/HomeScreen';
 import CreateWorkoutScreen from './screens/CreateWorkoutScreen';
+import ActiveWorkoutScreen from './screens/ActiveWorkoutScreen';
+import ProfileEditScreen from './screens/ProfileEditScreen';
 
 const App = () => {
   const [screen, setScreen] = useState('login');
+  const [currentWorkout, setCurrentWorkout] = useState(null);
 
   const goToLogin = () => setScreen('login');
   const goToRegister = () => setScreen('register');
   const goToHome = () => setScreen('home');
+  const goToProfileEdit = () => setScreen('profileEdit')
 
   return (
     <View style={styles.container}>
@@ -112,7 +116,12 @@ const App = () => {
         <HomeScreen
           onGoToLogin={goToLogin}
           onGoToCreateWorkout={() => setScreen('createWorkout')}
-          onGoToWorkout={() => setScreen('workout')}
+          onStartWorkout={(workout) => {
+            setCurrentWorkout(workout);
+            setScreen('activeWorkout');
+          }}
+          onLogout={goToLogin}
+          onGoToProfileEdit={goToProfileEdit}
         />
       )}
       {screen === 'createWorkout' && (
@@ -121,6 +130,15 @@ const App = () => {
       {screen === 'workout' && (
         <WorkoutScreen onGoBack={() => setScreen('home')} />
       )}
+      {screen === 'activeWorkout' && (
+        <ActiveWorkoutScreen
+          workout={currentWorkout}
+          onGoBack={() => setScreen('home')}
+        />
+      )}
+      {screen === 'profileEdit' && (
+  <ProfileEditScreen onGoBack={() => setScreen('home')} />
+)}
     </View>
   );
 };

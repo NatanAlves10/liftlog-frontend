@@ -1,166 +1,406 @@
-// src/screens/HomeScreen.js — VERSÃO FINAL LIMPA (sem vector-icons)
-import React, { useEffect, useState } from 'react';
+// import React, { useState, useEffect } from 'react';
+// import {
+//   View,
+//   Text,
+//   StyleSheet,
+//   TouchableOpacity,
+//   ScrollView,
+//   Alert,
+//   ActivityIndicator,
+// } from 'react-native';
+// import { TokenStorage } from '../services/storage';
+// import api from '../config/api';
+
+// const HomeScreen = ({ onGoToCreateWorkout, onStartWorkout }) => {
+//   const [userName, setUserName] = useState('Usuário');
+//   const [workouts, setWorkouts] = useState([]);
+//   const [loading, setLoading] = useState(true);
+
+//   // Busca nome do usuário e treinos salvos
+//   const loadData = async () => {
+//     try {
+//       const token = await TokenStorage.getToken();
+//       if (!token) {
+//         // Se não tiver token, volta pro login (opcional)
+//         // onGoToLogin?.();
+//         setLoading(false);
+//         return;
+//       }
+
+//       // 1. TENTA PEGAR O NOME DO TOKEN (mais rápido e 100% confiável)
+//       try {
+//         const payload = JSON.parse(atob(token.split('.')[1]));
+//         const fullName = 
+//           payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname"] ||
+//           payload.given_name ||
+//           payload.name ||
+//           payload.sub ||
+//           'Maromba';
+//         setUserName(fullName.split(' ')[0]); // só o primeiro nome
+//       } catch (e) {
+//         setUserName('Maromba');
+//       }
+
+//       // 2. CARREGA OS TREINOS (essa parte continua igual)
+//       const workoutRes = await fetch('http://192.168.1.221:8080/api/workouts', {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+
+//       if (workoutRes.ok) {
+//         const data = await workoutRes.json();
+//         const sorted = data.sort((a, b) => a.name.localeCompare(b.name));
+//         setWorkouts(sorted);
+//       } else {
+//         Alert.alert('Aviso', 'Não foi possível carregar os treinos');
+//       }
+//     } catch (err) {
+//       console.log('Erro:', err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     loadData();
+//   }, []);
+
+//   const handleStartWorkout = (workout) => {
+//     onStartWorkout(workout); // Passa o treino completo pra próxima tela
+//   };
+
+//   return (
+//     <View style={styles.container}>
+//       {/* HEADER */}
+//       <TouchableOpacity
+//   style={{ position: 'absolute', top: 60, left: 20 }}
+//   onPress={() => setScreen('profileEdit')}
+// >
+//   <Text style={{ color: '#9D4EDD', fontSize: 18 }}>Editar Perfil</Text>
+// </TouchableOpacity>
+//       <View style={styles.header}>
+//         <Text style={styles.welcome}>Bem-vindo,</Text>
+//         <Text style={styles.name}>{userName}!</Text>
+//       </View>
+
+//       {/* LISTA DE TREINOS */}
+//       <View style={styles.section}>
+//         <Text style={styles.sectionTitle}>
+//           Seus Treinos {workouts.length > 0 && `(${workouts.length})`}
+//         </Text>
+
+//         {loading ? (
+//           <ActivityIndicator size="large" color="#00FFCC" style={{ marginTop: 40 }} />
+//         ) : workouts.length === 0 ? (
+//           <View style={styles.empty}>
+//             <Text style={styles.emptyText}>Nenhum treino criado ainda</Text>
+//             <Text style={styles.emptySub}>Toque no + para começar!</Text>
+//           </View>
+//         ) : (
+//           <ScrollView showsVerticalScrollIndicator={false}>
+//             {workouts.map((workout) => (
+//               <View key={workout.id} style={styles.workoutCard}>
+//                 <View style={styles.workoutInfo}>
+//                   <Text style={styles.workoutName}>{workout.name}</Text>
+//                   <Text style={styles.workoutCount}>
+//                     {workout.exercises.length} exercício{workout.exercises.length > 1 ? 's' : ''}
+//                   </Text>
+//                 </View>
+//                 <TouchableOpacity
+//                   style={styles.startBtn}
+//                   onPress={() => handleStartWorkout(workout)}
+//                 >
+//                   <Text style={styles.startText}>INICIAR</Text>
+//                 </TouchableOpacity>
+//               </View>
+//             ))}
+//           </ScrollView>
+//         )}
+//       </View>
+
+//       {/* BOTÃO CRIAR TREINO */}
+//       <TouchableOpacity style={styles.fab} onPress={onGoToCreateWorkout}>
+//         <Text style={styles.fabText}>+</Text>
+//       </TouchableOpacity>
+//     </View>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1, backgroundColor: '#000', paddingTop: 60 },
+//   header: { paddingHorizontal: 20 },
+//   welcome: { color: '#AAA', fontSize: 18 },
+//   name: { color: '#FFF', fontSize: 32, fontWeight: 'bold', marginTop: 4 },
+//   section: { flex: 1, paddingHorizontal: 20, marginTop: 30 },
+//   sectionTitle: { color: '#00FFCC', fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
+//   empty: { alignItems: 'center', marginTop: 60 },
+//   emptyText: { color: '#666', fontSize: 18 },
+//   emptySub: { color: '#444', marginTop: 8 },
+//   workoutCard: {
+//     backgroundColor: '#111',
+//     padding: 18,
+//     borderRadius: 16,
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     marginBottom: 12,
+//     borderLeftWidth: 4,
+//     borderLeftColor: '#9D4EDD',
+//   },
+//   workoutInfo: { flex: 1 },
+//   workoutName: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+//   workoutCount: { color: '#00FFCC', fontSize: 14, marginTop: 4 },
+//   startBtn: {
+//     backgroundColor: '#00FFCC',
+//     paddingHorizontal: 24,
+//     paddingVertical: 12,
+//     borderRadius: 25,
+//   },
+//   startText: { color: '#000', fontWeight: 'bold', fontSize: 15 },
+//   fab: {
+//     position: 'absolute',
+//     bottom: 30,
+//     right: 20,
+//     backgroundColor: '#9D4EDD',
+//     width: 60,
+//     height: 60,
+//     borderRadius: 30,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     elevation: 8,
+//   },
+//   fabText: { color: '#FFF', fontSize: 32, fontWeight: 'bold' },
+// });
+
+// export default HomeScreen;
+
+
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { TokenStorage } from '../services/storage';
+import api from '../config/api'; // ← IP centralizado
 
-const HomeScreen = ({ onGoToLogin, onGoToCreateWorkout, onGoToWorkout }) => {
+const HomeScreen = ({ onGoToCreateWorkout, onStartWorkout, onLogout, onGoToProfileEdit }) => {
   const [userName, setUserName] = useState('Usuário');
+  const [workouts, setWorkouts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadUserName();
-  }, []);
-
-  const loadUserName = async () => {
+  const loadData = async () => {
     try {
       const token = await TokenStorage.getToken();
       if (!token) {
-        onGoToLogin();
+        onLogout?.();
         return;
       }
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const name =
-        payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname"] ||
-        payload.given_name ||
-        payload.firstName ||
-        'Usuário';
-      setUserName(name.split(' ')[0]);
-    } catch (e) {
-      setUserName('Usuário');
+
+      // Pega o primeiro nome do token
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const fullName =
+          payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname"] ||
+          payload.given_name ||
+          payload.name ||
+          payload.sub ||
+          'Usuario';
+        setUserName(fullName.split(' ')[0]);
+      } catch (e) {
+        setUserName('Usuario');
+      }
+
+      // Carrega treinos com IP centralizado
+      const workoutRes = await fetch(api.workouts, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (workoutRes.ok) {
+        const data = await workoutRes.json();
+        const sorted = data.sort((a, b) => a.name.localeCompare(b.name));
+        setWorkouts(sorted);
+      } else {
+        Alert.alert('Aviso', 'Não foi possível carregar os treinos');
+      }
+    } catch (err) {
+      console.log('Erro:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // === LOGOUT COM CONFIRMAÇÃO ===
   const handleLogout = () => {
-    Alert.alert('Sair', 'Tem certeza que deseja sair?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          await TokenStorage.clearToken();
-          onGoToLogin();
+    Alert.alert(
+      'Sair da conta',
+      'Tem certeza que deseja sair?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: async () => {
+            await TokenStorage.clearToken();
+            onLogout(); // volta pro Login
+          },
         },
-      },
-    ]);
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleStartWorkout = (workout) => {
+    onStartWorkout(workout);
   };
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        {/* MENU ESQUERDO - texto simples */}
-        <TouchableOpacity style={styles.menuButton}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
 
-        {/* BOTÃO + DIREITA */}
-        <TouchableOpacity style={styles.addButton} onPress={onGoToCreateWorkout}>
-          <Text style={styles.addIcon}>+</Text>
-        </TouchableOpacity>
+      {/* EDITAR PERFIL - SUPERIOR DIREITO */}
+      <TouchableOpacity style={styles.editProfileBtn} onPress={onGoToProfileEdit}>
+        <Text style={styles.editProfileText}>Editar Perfil</Text>
+      </TouchableOpacity>
+
+      {/* SAUDAÇÃO */}
+      <View style={styles.header}>
+        <Text style={styles.welcome}>Bem-vindo,</Text>
+        <Text style={styles.name}>{userName}!</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
-        <Text style={styles.greeting}>Olá, {userName}!</Text>
-        <Text style={styles.subtitle}>Pronto para hoje?</Text>
+      {/* LISTA DE TREINOS - mantida 100% igual */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          Seus Treinos {workouts.length > 0 && `(${workouts.length})`}
+        </Text>
 
-        {/* CARD DO TREINO DE HOJE */}
-        <View style={styles.todayCard}>
-          <Text style={styles.dayLabel}>Hoje</Text>
-          <Text style={styles.workoutName}>Inferiores</Text>
-          <View style={styles.exercises}>
-            <Text style={styles.exercise}>• Agachamento Livre</Text>
-            <Text style={styles.exercise}>• Leg Press 45°</Text>
-            <Text style={styles.exercise}>• Stiff</Text>
-            <Text style={styles.exercise}>• Panturrilha em Pé</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#00FFCC" style={{ marginTop: 40 }} />
+        ) : workouts.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>Nenhum treino criado ainda</Text>
+            <Text style={styles.emptySub}>Toque no + para começar!</Text>
           </View>
-          <TouchableOpacity style={styles.startButton} onPress={onGoToWorkout}>
-            <Text style={styles.startButtonText}>Iniciar Treino</Text>
-          </TouchableOpacity>
-        </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {workouts.map((workout) => (
+              <View key={workout.id} style={styles.workoutCard}>
+                <View style={styles.workoutInfo}>
+                  <Text style={styles.workoutName}>{workout.name}</Text>
+                  <Text style={styles.workoutCount}>
+                    {workout.exercises.length} exercício{workout.exercises.length > 1 ? 's' : ''}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.startBtn}
+                  onPress={() => handleStartWorkout(workout)}
+                >
+                  <Text style={styles.startText}>INICIAR</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
 
-        <Text style={styles.sectionTitle}>Próximos</Text>
-        <View style={styles.nextCard}>
-          <Text style={styles.nextDay}>Amanhã</Text>
-          <Text style={styles.nextWorkout}>Superiores</Text>
-        </View>
+      {/* BOTÃO + CRIAR TREINO */}
+      <TouchableOpacity style={styles.fab} onPress={onGoToCreateWorkout}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Sair da conta</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      {/* BOTÃO SAIR - INFERIOR ESQUERDO */}
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Sair</Text>
+      </TouchableOpacity>
+
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: {
+  container: { flex: 1, backgroundColor: '#000', paddingTop: 60 },
+
+  // Botão Editar Perfil - canto superior direito
+  editProfileBtn: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
+  },
+  editProfileText: {
+    color: '#9D4EDD',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+
+  header: { paddingHorizontal: 20 },
+  welcome: { color: '#AAA', fontSize: 18 },
+  name: { color: '#FFF', fontSize: 32, fontWeight: 'bold', marginTop: 4 },
+
+  section: { flex: 1, paddingHorizontal: 20, marginTop: 30 },
+  sectionTitle: { color: '#00FFCC', fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
+
+  empty: { alignItems: 'center', marginTop: 60 },
+  emptyText: { color: '#666', fontSize: 18 },
+  emptySub: { color: '#444', marginTop: 8 },
+
+  workoutCard: {
+    backgroundColor: '#111',
+    padding: 18,
+    borderRadius: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 20,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#9D4EDD',
   },
-  menuButton: {
-    padding: 10,
-  },
-  menuIcon: {
-    fontSize: 34,
-    color: '#9D4EDD',
-  },
-  addButton: {
-    width: 56,
-    height: 56,
+  workoutInfo: { flex: 1 },
+  workoutName: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  workoutCount: { color: '#00FFCC', fontSize: 14, marginTop: 4 },
+
+  startBtn: {
     backgroundColor: '#00FFCC',
-    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  startText: { color: '#000', fontWeight: 'bold', fontSize: 15 },
+
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: '#9D4EDD',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#00FFCC',
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
+    elevation: 8,
   },
-  addIcon: {
-    fontSize: 36,
-    color: '#000',
-    fontWeight: 'bold',
-    marginTop: -3,
+  fabText: { color: '#FFF', fontSize: 32, fontWeight: 'bold' },
+
+  // Botão Sair - canto inferior esquerdo
+  logoutBtn: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    padding: 10,
+    zIndex: 10,
   },
-  content: { flex: 1, paddingHorizontal: 24 },
-  greeting: { fontSize: 32, color: '#FFF', fontWeight: 'bold', marginTop: 10 },
-  subtitle: { fontSize: 18, color: '#00FFCC', marginBottom: 30 },
-  todayCard: {
-    backgroundColor: '#111',
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 2,
-    borderColor: '#00FFCC',
-    marginBottom: 30,
+  logoutText: {
+    color: '#FF4444',
+    fontSize: 18,
+    fontWeight: '600',
   },
-  dayLabel: { color: '#00FFCC', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  workoutName: { fontSize: 28, color: '#FFF', fontWeight: 'bold', marginBottom: 20 },
-  exercises: { marginBottom: 24 },
-  exercise: { color: '#AAA', fontSize: 17, marginBottom: 10, paddingLeft: 6 },
-  startButton: {
-    backgroundColor: '#00FFCC',
-    paddingVertical: 16,
-    borderRadius: 30,
-    alignItems: 'center',
-  },
-  startButtonText: { color: '#000', fontSize: 18, fontWeight: 'bold' },
-  sectionTitle: { fontSize: 20, color: '#9D4EDD', fontWeight: 'bold', marginBottom: 16 },
-  nextCard: { backgroundColor: '#111', padding: 20, borderRadius: 16, marginBottom: 20 },
-  nextDay: { color: '#9D4EDD', fontSize: 15, fontWeight: '600' },
-  nextWorkout: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginTop: 4 },
-  logoutButton: { marginTop: 40, alignItems: 'center', padding: 16 },
-  logoutText: { color: '#FF5555', fontSize: 16, fontWeight: '600' },
 });
 
 export default HomeScreen;
