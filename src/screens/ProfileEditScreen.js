@@ -219,7 +219,8 @@
 // src/screens/ProfileEditScreen.js
 // src/screens/ProfileEditScreen.js — VERSÃO FINAL E PERFEITA
 // src/screens/ProfileEditScreen.js
-import React, { useState, useEffect } from 'react';
+// src/screens/ProfileEditScreen.js
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -234,13 +235,8 @@ import {
 } from 'react-native';
 import { TokenStorage } from '../services/storage';
 import api from '../config/api';
-import { COLORS, SIZES } from '../styles/theme';
-import { inputStyle, textStyle } from '../styles/components';
 
 const ProfileEditScreen = ({ onGoBack }) => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -252,44 +248,45 @@ const ProfileEditScreen = ({ onGoBack }) => {
     weight: '',
   });
 
-  useEffect(() => {
-    loadUserData();
-  }, []);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false); // controla se já carregou
+
+  const formatCPF = (cpf) => {
+    const nums = cpf.replace(/\D/g, '');
+    if (nums.length !== 11) return cpf;
+    return `${nums.slice(0,3)}.${nums.slice(3,6)}.${nums.slice(6,9)}-${nums.slice(9)}`;
+  };
+
+  const formatPhone = (phone) => {
+    const nums = phone.replace(/\D/g, '');
+    if (nums.length !== 11) return phone;
+    return `+55 (${nums.slice(0,2)}) ${nums.slice(2,7)}-${nums.slice(7)}`;
+  };
 
   const loadUserData = async () => {
+    setLoading(true);
     try {
       const token = await TokenStorage.getToken();
       if (!token) {
-        Alert.alert('Erro', 'Token não encontrado');
-        setLoading(false);
+        Alert.alert('Erro', 'Você precisa estar logado');
         return;
       }
 
-      // ALERT 1: Mostra o token que está sendo enviado
-      Alert.alert('TOKEN ENVIADO', token.substring(0, 70) + '...', [{ text: 'OK' }]);
-
       const res = await fetch(api.userSelf, {
-        method: 'GET',
-        headers: {
+        headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
       });
 
-      // ALERT 2: Mostra o status e a resposta exata do backend
-      const text = await res.text();
-      Alert.alert(
-        'RESPOSTA DO BACKEND',
-        `Status: ${res.status}\n\nResposta:\n${text.substring(0, 600)}`,
-        [{ text: 'OK' }]
-      );
-
       if (!res.ok) {
-        throw new Error(`Erro ${res.status}: ${text}`);
+        const err = await res.text();
+        throw new Error(err || 'Erro ao carregar dados');
       }
 
-      const data = JSON.parse(text);
+      const data = await res.json();
 
       setForm({
         firstName: data.firstName || '',
@@ -298,12 +295,14 @@ const ProfileEditScreen = ({ onGoBack }) => {
         phoneNumber: data.phoneNumber || '',
         cpf: data.cpf || '',
         gender: data.gender || 'Undefined',
-        height: data.height ? data.height.toString() : '',
-        weight: data.weight ? data.weight.toString() : '',
+        height: data.height ? String(data.height) : '',
+        weight: data.weight ? String(data.weight) : '',
       });
 
+      setDataLoaded(true);
+      Alert.alert('Sucesso!', 'Seus dados foram carregados');
     } catch (err) {
-      Alert.alert('ERRO FINAL', err.message);
+      Alert.alert('Erro', err.message || 'Falha ao carregar dados');
     } finally {
       setLoading(false);
     }
@@ -323,8 +322,8 @@ const ProfileEditScreen = ({ onGoBack }) => {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim().toLowerCase(),
-        phoneNumber: form.phoneNumber.replace(/\D/g, ''),
-        cpf: form.cpf.replace(/\D/g, ''),
+        phoneNumber: formatPhone(form.phoneNumber),
+        cpf: formatCPF(form.cpf),
         gender: form.gender === 'Undefined' ? null : form.gender,
         height: form.height ? parseFloat(form.height) || 0 : 0,
         weight: form.weight ? parseFloat(form.weight) || 0 : 0,
@@ -346,8 +345,8 @@ const ProfileEditScreen = ({ onGoBack }) => {
         throw new Error(errorText || 'Erro ao salvar');
       }
 
-      Alert.alert('Sucesso!', 'Perfil atualizado com sucesso!', [
-        { text: 'FODA!', onPress: onGoBack },
+      Alert.alert('SUCESSO!', 'Perfil atualizado com sucesso!', [
+        { text: 'Ok!', onPress: onGoBack },
       ]);
     } catch (err) {
       Alert.alert('Erro', err.message || 'Falha ao salvar');
@@ -356,120 +355,184 @@ const ProfileEditScreen = ({ onGoBack }) => {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-        <ActivityIndicator size="large" color="#00FFCC" />
-      </View>
-    );
-  }
-
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        
-        <TouchableOpacity style={styles.backBtn} onPress={onGoBack}>
-          <Text style={styles.backText}>Voltar</Text>
-        </TouchableOpacity>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#000' }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
 
-        <Text style={styles.title}>Editar Perfil</Text>
-
-        <View style={styles.form}>
-          <Text style={styles.label}>Nome</Text>
-          <TextInput style={styles.input} value={form.firstName} onChangeText={(t) => setForm({ ...form, firstName: t })} placeholder="Natan" placeholderTextColor="#666" />
+        {/* BOTÃO VOLTAR */}
+        <View style={{ paddingTop: Platform.OS === 'android' ? 50 : 20, paddingHorizontal: 20 }}>
+          <TouchableOpacity onPress={onGoBack}>
+            <Text style={{ color: '#9D4EDD', fontSize: 18, fontWeight: 'bold' }}>Voltar</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.form}>
-          <Text style={styles.label}>Sobrenome</Text>
-          <TextInput style={styles.input} value={form.lastName} onChangeText={(t) => setForm({ ...form, lastName: t })} placeholder="Alves" placeholderTextColor="#666" />
-        </View>
+        <Text style={{ color: '#FFF', fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 30 }}>
+          Editar Perfil
+        </Text>
 
-        <View style={styles.form}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput style={styles.input} value={form.email} onChangeText={(t) => setForm({ ...form, email: t })} keyboardType="email-address" autoCapitalize="none" placeholder="natanalves.0210@gmail.com" placeholderTextColor="#666" />
-        </View>
-
-        <View style={styles.form}>
-          <Text style={styles.label}>Celular</Text>
-          <TextInput style={styles.input} value={form.phoneNumber} onChangeText={(t) => setForm({ ...form, phoneNumber: t })} keyboardType="phone-pad" placeholder="+55 (62) 99135-8521" placeholderTextColor="#666" />
-        </View>
-
-        <View style={styles.form}>
-          <Text style={styles.label}>CPF</Text>
-          <TextInput style={styles.input} value={form.cpf} onChangeText={(t) => setForm({ ...form, cpf: t })} keyboardType="numeric" placeholder="029.429.031-12" placeholderTextColor="#666" />
-        </View>
-
-        <View style={styles.form}>
-          <Text style={styles.label}>Sexo</Text>
-          <View style={styles.radioGroup}>
+        {/* BOTÃO CARREGAR DADOS */}
+        {!dataLoaded && (
+          <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
             <TouchableOpacity
-              style={[styles.radio, form.gender === 'Male' && styles.radioActive]}
-              onPress={() => setForm({ ...form, gender: 'Male' })}
+              style={{
+                backgroundColor: '#00FFCC',
+                padding: 16,
+                borderRadius: 30,
+                alignItems: 'center',
+              }}
+              onPress={loadUserData}
+              disabled={loading}
             >
-              <Text style={form.gender === 'Male' ? styles.radioTextActive : styles.radioText}>
-                Masculino
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.radio, form.gender === 'Female' && styles.radioActive]}
-              onPress={() => setForm({ ...form, gender: 'Female' })}
-            >
-              <Text style={form.gender === 'Female' ? styles.radioTextActive : styles.radioText}>
-                Feminino
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 18 }}>
+                  CARREGAR MEUS DADOS
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
-        </View>
+        )}
 
-        {/* ALTURA — SÓ CENTÍMETROS */}
-        <View style={styles.form}>
-          <Text style={styles.label}>Altura (cm)</Text>
-          <TextInput
-            style={styles.input}
-            value={form.height}
-            onChangeText={(t) => setForm({ ...form, height: t })}
-            keyboardType="numeric"
-            placeholder="190"
-            placeholderTextColor="#666"
-          />
-        </View>
+        {/* CAMPOS (só aparecem depois de carregar) */}
+        {dataLoaded && (
+          <>
+            {/* NOME */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ color: '#AAA', fontSize: 14, marginBottom: 8 }}>Nome</Text>
+              <TextInput
+                style={styles.input}
+                value={form.firstName}
+                onChangeText={(t) => setForm({ ...form, firstName: t })}
+                placeholder="Seu nome"
+                placeholderTextColor="#666"
+              />
+            </View>
 
-        {/* PESO — SÓ QUILOGRAMAS */}
-        <View style={styles.form}>
-          <Text style={styles.label}>Peso (kg)</Text>
-          <TextInput
-            style={styles.input}
-            value={form.weight}
-            onChangeText={(t) => setForm({ ...form, weight: t })}
-            keyboardType="numeric"
-            placeholder="80"
-            placeholderTextColor="#666"
-          />
-        </View>
+            {/* SOBRENOME */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ color: '#AAA', fontSize: 14, marginBottom: 8 }}>Sobrenome</Text>
+              <TextInput
+                style={styles.input}
+                value={form.lastName}
+                onChangeText={(t) => setForm({ ...form, lastName: t })}
+                placeholder="Seu sobrenome"
+                placeholderTextColor="#666"
+              />
+            </View>
 
-        <TouchableOpacity
-          style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#000" />
-          ) : (
-            <Text style={styles.saveText}>SALVAR ALTERAÇÕES</Text>
-          )}
-        </TouchableOpacity>
+            {/* E-MAIL */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ color: '#AAA', fontSize: 14, marginBottom: 8 }}>E-mail</Text>
+              <TextInput
+                style={styles.input}
+                value={form.email}
+                onChangeText={(t) => setForm({ ...form, email: t })}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="seu@email.com"
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            {/* CELULAR */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ color: '#AAA', fontSize: 14, marginBottom: 8 }}>Celular</Text>
+              <TextInput
+                style={styles.input}
+                value={form.phoneNumber}
+                onChangeText={(t) => setForm({ ...form, phoneNumber: t })}
+                keyboardType="phone-pad"
+                placeholder="+55 (62) 99135-8521"
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            {/* CPF */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ color: '#AAA', fontSize: 14, marginBottom: 8 }}>CPF</Text>
+              <TextInput
+                style={styles.input}
+                value={form.cpf}
+                onChangeText={(t) => setForm({ ...form, cpf: t })}
+                keyboardType="numeric"
+                placeholder="029.429.031-12"
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            {/* SEXO */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ color: '#AAA', fontSize: 14, marginBottom: 8 }}>Sexo</Text>
+              <View style={{ flexDirection: 'row', gap: 16 }}>
+                <TouchableOpacity
+                  style={[styles.radio, form.gender === 'Male' && styles.radioActive]}
+                  onPress={() => setForm({ ...form, gender: 'Male' })}
+                >
+                  <Text style={form.gender === 'Male' ? styles.radioTextActive : styles.radioText}>
+                    Masculino
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.radio, form.gender === 'Female' && styles.radioActive]}
+                  onPress={() => setForm({ ...form, gender: 'Female' })}
+                >
+                  <Text style={form.gender === 'Female' ? styles.radioTextActive : styles.radioText}>
+                    Feminino
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* ALTURA */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{ color: '#AAA', fontSize: 14, marginBottom: 8 }}>Altura (cm)</Text>
+              <TextInput
+                style={styles.input}
+                value={form.height}
+                onChangeText={(t) => setForm({ ...form, height: t })}
+                keyboardType="numeric"
+                placeholder="190"
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            {/* PESO */}
+            <View style={{ paddingHorizontal: 20, marginBottom: 40 }}>
+              <Text style={{ color: '#AAA', fontSize: 14, marginBottom: 8 }}>Peso (kg)</Text>
+              <TextInput
+                style={styles.input}
+                value={form.weight}
+                onChangeText={(t) => setForm({ ...form, weight: t })}
+                keyboardType="numeric"
+                placeholder="80"
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            {/* BOTÃO SALVAR */}
+            <View style={{ paddingHorizontal: 20 }}>
+              <TouchableOpacity
+                style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+                onPress={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#000" />
+                ) : (
+                  <Text style={styles.saveText}>SALVAR ALTERAÇÕES</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000', paddingTop: 50 },
-  backBtn: { padding: 16 },
-  backText: { color: '#9D4EDD', fontSize: 18, fontWeight: 'bold' },
-  title: { color: '#FFF', fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 30 },
-  form: { marginBottom: 20, paddingHorizontal: 20 },
-  label: { color: '#AAA', fontSize: 14, marginBottom: 8 },
+  // ... seus estilos antigos ...
   input: {
     backgroundColor: '#111',
     color: '#FFF',
@@ -477,20 +540,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 16,
   },
-  radioGroup: { flexDirection: 'row', gap: 16 },
-  radio: { paddingVertical: 12, paddingHorizontal: 20, backgroundColor: '#111', borderRadius: 30 },
-  radioActive: { backgroundColor: '#00FFCC' },
-  radioText: { color: '#AAA' },
-  radioTextActive: { color: '#000', fontWeight: 'bold' },
+  radio: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#111',
+    borderRadius: 30,
+  },
+  radioActive: {
+    backgroundColor: '#00FFCC',
+  },
+  radioText: {
+    color: '#AAA',
+    fontWeight: '600',
+  },
+  radioTextActive: {
+    color: '#000',
+    fontWeight: 'bold',
+  },
   saveBtn: {
     backgroundColor: '#00FFCC',
-    margin: 20,
     padding: 18,
     borderRadius: 30,
     alignItems: 'center',
   },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveText: { color: '#000', fontWeight: 'bold', fontSize: 18 },
+  saveText: {
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
 });
 
 export default ProfileEditScreen;

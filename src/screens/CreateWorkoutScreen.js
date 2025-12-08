@@ -92,7 +92,7 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
       ...currentExercise,
       sets: +sets,
       reps: +reps,
-      weight: 0,
+      weight: peso,
       unit: 'Kilograms',
     };
     setSelectedExercises(prev => [...prev, novo]);
@@ -114,7 +114,7 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
           id: ex.id,
           sets: ex.sets,
           reps: ex.reps,
-          weight: Number(ex.weight) || 0,
+          weight: ex.weight,
           unit: 'Kilograms',
         })),
       };
@@ -164,20 +164,37 @@ const CreateWorkoutScreen = ({ onGoBack }) => {
         />
       </View>
 
-      <Text style={styles.dayLabel}>Dia da semana</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daySelect}>
-        {daysOfWeek.map(day => (
-          <TouchableOpacity
-            key={day.value}
-            style={[styles.dayChip, dayOfWeek === day.value && styles.dayChipActive]}
-            onPress={() => setDayOfWeek(day.value)}
-          >
-            <Text style={[styles.dayText, dayOfWeek === day.value && styles.dayTextActive]}>
-              {day.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* DIA DA SEMANA — VAI APARECER AGORA! */}
+      <View style={{ marginTop: 16 }}>
+        <Text style={{ color: '#00FFCC', fontSize: 16, fontWeight: 'bold', marginLeft: 16, marginBottom: 8 }}>
+          Dia da semana
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingLeft: 16 }}>
+          {daysOfWeek.map(day => (
+            <TouchableOpacity
+              key={day.value}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                backgroundColor: dayOfWeek === day.value ? '#00FFCC' : '#111',
+                borderRadius: 30,
+                marginRight: 12,
+                borderWidth: 1,
+                borderColor: dayOfWeek === day.value ? '#00FFCC' : '#333',
+              }}
+              onPress={() => setDayOfWeek(day.value)}
+            >
+              <Text style={{
+                color: dayOfWeek === day.value ? '#000' : '#AAA',
+                fontSize: 13,
+                fontWeight: '600',
+              }}>
+                {day.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* SELECT COMPACTO */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.select}>

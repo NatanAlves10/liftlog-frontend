@@ -1,4 +1,4 @@
-const BASE_URL = 'http://192.168.1.221:8080';
+const BASE_URL = 'http://10.172.8.140:8080';
 
 export default {
   login: `${BASE_URL}/login`,
@@ -6,6 +6,6 @@ export default {
   workouts: `${BASE_URL}/api/workouts`,
   exercises: `${BASE_URL}/api/exercises`,
   workoutSessions: `${BASE_URL}/api/workout-sessions`,
-  userProfile: `${BASE_URL}/api/users/self`,
+  userSelf: `${BASE_URL}/api/users/self`,
   updateUser: `${BASE_URL}/api/users`,
 };

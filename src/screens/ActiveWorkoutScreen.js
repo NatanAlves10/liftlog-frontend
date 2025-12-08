@@ -11,13 +11,19 @@ import {
   Modal,
 } from 'react-native';
 import { TokenStorage } from '../services/storage';
+import api from '../config/api';
 
 const ActiveWorkoutScreen = ({ workout, onGoBack }) => {
   const [exercises, setExercises] = useState(
     workout.exercises.map(ex => ({
       ...ex,
       completedSets: 0,
-      logs: Array(ex.sets).fill({ weight: '', done: false }),
+      // Cada série começa com o peso sugerido + campo pra peso real
+      logs: Array(ex.sets).fill(null).map(() => ({
+        suggestedWeight: ex.weight || 0,  // peso que veio do treino
+        actualWeight: '',                 // peso que o usuário vai digitar
+        done: false,
+      })),
     }))
   );
 
@@ -55,7 +61,7 @@ const ActiveWorkoutScreen = ({ workout, onGoBack }) => {
   const updateWeight = (exIndex, setIndex, value) => {
     setExercises(prev => {
       const newEx = [...prev];
-      newEx[exIndex].logs[setIndex].weight = value.replace(/[^0-9]/g, '');
+      newEx[exIndex].logs[setIndex].actualWeight = value.replace(/[^0-9]/g, '');
       return newEx;
     });
   };
@@ -79,20 +85,31 @@ const ActiveWorkoutScreen = ({ workout, onGoBack }) => {
   const saveWorkout = async () => {
     try {
       const token = await TokenStorage.getToken();
+
       const payload = {
         workoutId: workout.id,
         completedAt: new Date().toISOString(),
-        exercises: exercises.map(ex => ({
-          exerciseId: ex.id,
-          setsCompleted: ex.completedSets,
-          logs: ex.logs.map(log => ({
-            weight: log.weight ? Number(log.weight) : 0,
+        exercises: exercises.map(ex => {
+          // Pega o último peso real digitado (ou o sugerido)
+          const lastActual = ex.logs
+            .filter(l => l.actualWeight)
+            .pop()?.actualWeight;
+
+          const finalWeight = lastActual ? Number(lastActual) : (ex.weight || 0);
+
+          return {
+            id: ex.id,
+            sets: ex.sets,
             reps: ex.reps,
-          })),
-        })),
+            weight: finalWeight,
+            unit: "Kilograms"
+          };
+        }),
       };
 
-      const res = await fetch('http://10.16.206.141:8080/api/workout-sessions', {
+      console.log("ENVIANDO PARA O BACKEND:", JSON.stringify(payload, null, 2));
+
+      const res = await fetch(api.workoutSessions, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -101,13 +118,21 @@ const ActiveWorkoutScreen = ({ workout, onGoBack }) => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error();
+      const responseText = await res.text();
 
-      Alert.alert('TREINO SALVO!', 'Seu progresso foi registrado com sucesso!', [
-        { text: 'FODA!', onPress: onGoBack },
-      ]);
+      // AQUI VAI MOSTRAR O ERRO EXATO DO BACKEND NO CELULAR!
+      Alert.alert(
+        res.ok ? 'SUCESSO!' : 'ERRO DO BACKEND',
+        res.ok 
+          ? 'Treino salvo com sucesso!' 
+          : `Status: ${res.status}\n\nMensagem do servidor:\n${responseText}`,
+        [{ text: 'OK', onPress: res.ok ? onGoBack : undefined }]
+      );
+
+      if (!res.ok) throw new Error(responseText);
+
     } catch (err) {
-      Alert.alert('Erro', 'Não foi possível salvar o treino');
+      Alert.alert('Erro', err.message || 'Falha ao salvar');
     }
   };
 
@@ -140,20 +165,32 @@ const ActiveWorkoutScreen = ({ workout, onGoBack }) => {
                 <View key={setIndex} style={styles.setContainer}>
                   <Text style={styles.setNumber}>{setIndex + 1}</Text>
 
-                  <TextInput
-                    style={[styles.weightInput, log.done && styles.weightDone]}
-                    placeholder="kg"
-                    keyboardType="numeric"
-                    value={log.weight}
-                    onChangeText={(v) => updateWeight(exIndex, setIndex, v)}
-                  />
+                    {/* PESO SUGERIDO */}
+                    <Text style={styles.suggestedWeight}>
+                      Sugerido: {log.suggestedWeight > 0 ? `${log.suggestedWeight}kg` : '—'}
+                    </Text>
 
-                  <TouchableOpacity
-                    style={[styles.checkBtn, log.done && styles.checkDone]}
-                    onPress={() => toggleSet(exIndex, setIndex)}
-                  >
-                    <Text style={styles.checkText}>{log.done ? 'Feito' : 'Não'}</Text>
-                  </TouchableOpacity>
+                    {/* INPUT DO PESO REAL */}
+                    <TextInput
+                      style={[
+                        styles.weightInput,
+                        log.done && styles.weightDone
+                      ]}
+                      placeholder="kg"
+                      keyboardType="numeric"
+                      value={log.actualWeight}
+                      onChangeText={(v) => updateWeight(exIndex, setIndex, v)}
+                    />
+
+                    {/* BOTÃO DE CHECK */}
+                    <TouchableOpacity
+                      style={[styles.checkBtn, log.done && styles.checkDone]}
+                      onPress={() => toggleSet(exIndex, setIndex)}
+                    >
+                      <Text style={styles.checkText}>
+                        {log.done ? 'Feito' : 'Não'}
+                      </Text>
+                    </TouchableOpacity>
                 </View>
               ))}
             </View>
@@ -224,6 +261,29 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     marginTop: 4,
+  },
+  weightContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  suggestedWeight: {
+    color: '#666',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  weightInput: {
+    backgroundColor: '#222',
+    color: '#FFF',
+    width: 70,
+    textAlign: 'center',
+    padding: 10,
+    borderRadius: 10,
+    fontSize: 16,
+  },
+  weightDone: {
+    backgroundColor: '#00FFCC',
+    color: '#000',
+    fontWeight: 'bold',
   },
   weightDone: { backgroundColor: '#00FFCC', color: '#000' },
   checkBtn: { marginTop: 6, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#333', borderRadius: 20 },
